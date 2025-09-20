@@ -2,7 +2,7 @@
   "name": "ollama-service",
   "description": "Ollama AI Language Model Service",
   "website": "https://ollama.com/",
-  "keywords": ["ai", "llm", "ollama", "machine-learning"],
+  "repository": "https://github.com/MohamedAITALLA/ollama-deployment",
   "env": {
     "OLLAMA_HOST": {
       "description": "Host for Ollama server",

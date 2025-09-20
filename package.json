@@ -1,0 +1,19 @@
+{
+  "name": "ollama-service",
+  "version": "1.0.0",
+  "description": "Ollama AI Language Model Service",
+  "scripts": {
+    "start": "./start-ollama.sh",
+    "postinstall": "curl -fsSL https://ollama.com/install.sh | bash || true"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "dependencies": {},
+  "keywords": [
+    "ai",
+    "llm",
+    "ollama",
+    "machine-learning"
+  ]
+}
