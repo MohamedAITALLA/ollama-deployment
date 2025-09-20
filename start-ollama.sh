@@ -5,13 +5,24 @@ echo "Starting Ollama service..."
 echo "Host: $OLLAMA_HOST"
 echo "Port: ${PORT:-8080}"
 
-# Install Ollama if not present
+# Install Ollama manually (without root privileges)
 if ! command -v ollama &> /dev/null; then
     echo "Installing Ollama..."
-    curl -fsSL https://ollama.com/install.sh | bash
+    
+    # Download Ollama binary directly
+    OLLAMA_VERSION="0.3.12"
+    OLLAMA_URL="https://github.com/ollama/ollama/releases/download/v${OLLAMA_VERSION}/ollama-linux-amd64"
+    
+    curl -L -o /app/ollama $OLLAMA_URL
+    chmod +x /app/ollama
+    
     # Add to PATH
-    export PATH="/usr/local/bin:$PATH"
+    export PATH="/app:$PATH"
+    
     echo "Ollama installed successfully"
+else
+    # Ensure ollama is in PATH
+    export PATH="/app:$PATH"
 fi
 
 # Set port from Scalingo
@@ -21,7 +32,7 @@ export OLLAMA_PORT=${PORT:-8080}
 mkdir -p /app/.ollama
 
 # Start Ollama server in background
-ollama serve &
+/app/ollama serve &
 OLLAMA_PID=$!
 
 # Wait for Ollama to be ready
@@ -43,6 +54,7 @@ fi
 
 # Download models in background
 echo "Starting model download in background..."
+chmod +x download-models.sh || true
 ./download-models.sh &
 
 # Function to handle shutdown

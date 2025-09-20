@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "description": "Ollama AI Language Model Service",
   "scripts": {
-    "start": "bash start-ollama.sh",
-    "postinstall": "curl -fsSL https://ollama.com/install.sh | bash || true"
+    "start": "bash start-ollama.sh"
   },
   "engines": {
     "node": "18.x"
