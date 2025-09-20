@@ -42,12 +42,24 @@ PLACEHOLDER_PID=$!
     if [ ! -f "/app/ollama" ]; then
         cd /tmp
         
-        echo "Downloading Ollama v0.3.12 binary (known working version)..."
-        curl -L -f --connect-timeout 30 --max-time 300 -o /app/ollama \
-            "https://github.com/ollama/ollama/releases/download/v0.3.12/ollama-linux-amd64"
+        echo "Installing Ollama using official installation script..."
+        # Download and modify the official install script to work without sudo
+        curl -fsSL https://ollama.com/install.sh > /tmp/install.sh
         
+        # Modify the script to install in /app instead of system-wide
+        sed -i 's|/usr/local/bin|/app|g' /tmp/install.sh
+        sed -i 's|sudo ||g' /tmp/install.sh
+        sed -i 's|systemctl.*||g' /tmp/install.sh
+        sed -i '/adduser/d' /tmp/install.sh
+        sed -i '/service/d' /tmp/install.sh
+        
+        chmod +x /tmp/install.sh
+        bash /tmp/install.sh
+        
+        # Ensure binary is executable
         chmod +x /app/ollama
-        echo "Ollama binary downloaded and installed successfully"
+        
+        echo "Ollama installed successfully"
     fi
     
     # Test the binary
