@@ -42,24 +42,34 @@ PLACEHOLDER_PID=$!
     if [ ! -f "/app/ollama" ]; then
         cd /tmp
         
-        echo "Installing Ollama using official installation script..."
-        # Download and modify the official install script to work without sudo
-        curl -fsSL https://ollama.com/install.sh > /tmp/install.sh
+        echo "Manual Ollama installation (rootless)..."
+        cd /tmp
         
-        # Modify the script to install in /app instead of system-wide
-        sed -i 's|/usr/local/bin|/app|g' /tmp/install.sh
-        sed -i 's|sudo ||g' /tmp/install.sh
-        sed -i 's|systemctl.*||g' /tmp/install.sh
-        sed -i '/adduser/d' /tmp/install.sh
-        sed -i '/service/d' /tmp/install.sh
+        # Download the install script to see what it does
+        curl -fsSL https://ollama.com/install.sh > install.sh
         
-        chmod +x /tmp/install.sh
-        bash /tmp/install.sh
+        # Extract the download URL from the script
+        OLLAMA_URL=$(grep -o 'https://github.com/ollama/ollama/releases/download/[^"]*linux-amd64' install.sh | head -1)
         
-        # Ensure binary is executable
+        if [ -z "$OLLAMA_URL" ]; then
+            # Fallback: construct URL for latest version
+            echo "Constructing download URL for latest version..."
+            OLLAMA_URL="https://github.com/ollama/ollama/releases/latest/download/ollama-linux-amd64"
+        fi
+        
+        echo "Downloading Ollama from: $OLLAMA_URL"
+        curl -L -f --connect-timeout 30 --max-time 300 -o /app/ollama "$OLLAMA_URL"
+        
         chmod +x /app/ollama
         
-        echo "Ollama installed successfully"
+        # Verify the binary works
+        if /app/ollama version > /dev/null 2>&1; then
+            echo "✅ Ollama installed and verified successfully"
+        else
+            echo "❌ Ollama binary verification failed"
+            ls -la /app/ollama
+            file /app/ollama 2>/dev/null || echo "file command not available"
+        fi
     fi
     
     # Test the binary
