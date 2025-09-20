@@ -6,24 +6,31 @@ echo "Host: $OLLAMA_HOST"
 echo "Port: ${PORT:-8080}"
 
 # Install Ollama manually (without root privileges)
-if ! command -v ollama &> /dev/null; then
+if ! command -v ollama &> /dev/null && [ ! -f "/app/ollama" ]; then
     echo "Installing Ollama..."
     
-    # Download Ollama binary directly
-    OLLAMA_VERSION="0.3.12"
-    OLLAMA_URL="https://github.com/ollama/ollama/releases/download/v${OLLAMA_VERSION}/ollama-linux-amd64"
+    # Download Ollama tarball (more reliable than single binary)
+    OLLAMA_VERSION="0.10.0"
+    OLLAMA_URL="https://github.com/ollama/ollama/releases/download/v${OLLAMA_VERSION}/ollama-linux-amd64.tgz"
     
-    curl -L -o /app/ollama $OLLAMA_URL
+    echo "Downloading Ollama v${OLLAMA_VERSION}..."
+    curl -L -f -o /tmp/ollama.tgz "$OLLAMA_URL"
+    
+    echo "Extracting Ollama..."
+    tar -xzf /tmp/ollama.tgz -C /app/
+    
+    # Make sure it's executable
     chmod +x /app/ollama
+    rm -f /tmp/ollama.tgz
     
-    # Add to PATH
-    export PATH="/app:$PATH"
-    
-    echo "Ollama installed successfully"
+    echo "Ollama installed successfully to /app/ollama"
 else
-    # Ensure ollama is in PATH
-    export PATH="/app:$PATH"
+    echo "Ollama already available"
 fi
+
+# Ensure ollama is in PATH and use full path
+export PATH="/app:$PATH"
+OLLAMA_BIN="/app/ollama"
 
 # Set port from Scalingo
 export OLLAMA_PORT=${PORT:-8080}
@@ -32,7 +39,8 @@ export OLLAMA_PORT=${PORT:-8080}
 mkdir -p /app/.ollama
 
 # Start Ollama server in background
-/app/ollama serve &
+echo "Starting Ollama server..."
+$OLLAMA_BIN serve &
 OLLAMA_PID=$!
 
 # Wait for Ollama to be ready
@@ -49,6 +57,10 @@ done
 # Check if startup was successful
 if ! curl -s "http://localhost:${OLLAMA_PORT}/api/tags" > /dev/null 2>&1; then
     echo "Failed to start Ollama service"
+    echo "Checking if process is still running..."
+    if ! kill -0 $OLLAMA_PID 2>/dev/null; then
+        echo "Ollama process died. Checking logs..."
+    fi
     exit 1
 fi
 
