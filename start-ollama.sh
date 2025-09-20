@@ -14,7 +14,6 @@ export OLLAMA_MODELS="/app/.ollama"
 mkdir -p /app/.ollama
 
 # Start a simple HTTP server immediately to keep Scalingo happy
-# This prevents timeout while we install Ollama in the background
 echo "Starting placeholder server on port ${OLLAMA_PORT}..."
 cat > /tmp/placeholder.js << 'EOF'
 const http = require('http');
@@ -41,30 +40,22 @@ PLACEHOLDER_PID=$!
     echo "Installing Ollama in background..."
     
     if [ ! -f "/app/ollama" ]; then
-        # Download and extract as efficiently as possible
         cd /tmp
         
-        echo "Downloading Ollama v0.8.0..."
-        curl -L -f --connect-timeout 30 --max-time 300 -o ollama.tgz \
-            "https://github.com/ollama/ollama/releases/download/v0.8.0/ollama-linux-amd64.tgz"
-        
-        echo "Extracting Ollama binary only..."
-        # Extract just the binary we need, not everything
-        tar -tf ollama.tgz | grep -E '^[^/]*ollama$' | head -1 | xargs tar -xzf ollama.tgz
-        
-        # Find and move the binary
-        find . -name "ollama" -type f -executable -exec mv {} /app/ollama \; 2>/dev/null || \
-        tar -xzf ollama.tgz --strip-components=1 && mv ollama /app/ollama
+        echo "Downloading Ollama v0.8.0 binary directly..."
+        curl -L -f --connect-timeout 30 --max-time 300 -o /app/ollama \
+            "https://github.com/ollama/ollama/releases/download/v0.8.0/ollama-linux-amd64"
         
         chmod +x /app/ollama
-        rm -f ollama.tgz
-        
-        echo "Ollama binary extracted successfully"
+        echo "Ollama binary downloaded and installed successfully"
     fi
     
     # Test the binary
     if ! /app/ollama version >/dev/null 2>&1; then
         echo "Warning: Ollama binary test failed"
+        /app/ollama version || true
+    else
+        echo "✅ Ollama binary working correctly"
     fi
     
     # Stop placeholder server
@@ -77,18 +68,18 @@ PLACEHOLDER_PID=$!
     
     # Wait for Ollama to be ready
     echo "Waiting for Ollama API..."
-    for i in {1..20}; do
+    for i in {1..30}; do
         if curl -s "http://localhost:${OLLAMA_PORT}/api/tags" >/dev/null 2>&1; then
             echo "✅ Ollama API is ready!"
             break
         fi
-        echo "Attempt $i/20..."
-        sleep 3
+        echo "Attempt $i/30..."
+        sleep 5
     done
     
     # Download models in background
     (
-        sleep 30
+        sleep 10
         echo "Downloading TinyLlama model..."
         /app/ollama pull tinyllama:latest && echo "✅ Model downloaded" || echo "⚠️ Model download failed"
     ) &
