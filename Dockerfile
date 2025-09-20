@@ -24,7 +24,7 @@ COPY package.json /app/
 RUN npm install
 
 # Copy startup scripts
-COPY simplified-start.sh /app/start-ollama.sh
+COPY start-ollama.sh /app/start-ollama.sh
 RUN chmod +x /app/start-ollama.sh
 
 # Create models directory
@@ -34,7 +34,7 @@ RUN mkdir -p /app/.ollama
 # Copy it to our expected location
 RUN cp $(which ollama) /app/ollama && chmod +x /app/ollama
 
-# Expose port (will be set by Scalingo)
+# Expose port
 EXPOSE 8080
 
 # Start Ollama
