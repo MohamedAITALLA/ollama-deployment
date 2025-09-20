@@ -1,0 +1,35 @@
+{
+  "name": "ollama-service",
+  "description": "Ollama AI Language Model Service",
+  "website": "https://ollama.com/",
+  "keywords": ["ai", "llm", "ollama", "machine-learning"],
+  "env": {
+    "OLLAMA_HOST": {
+      "description": "Host for Ollama server",
+      "value": "0.0.0.0"
+    },
+    "OLLAMA_MODELS": {
+      "description": "Directory for storing models",
+      "value": "/app/.ollama"
+    },
+    "OLLAMA_MAX_LOADED_MODELS": {
+      "description": "Maximum number of models to keep in memory",
+      "value": "1"
+    },
+    "OLLAMA_NUM_PARALLEL": {
+      "description": "Number of parallel requests to handle",
+      "value": "1"
+    },
+    "OLLAMA_KEEP_ALIVE": {
+      "description": "How long to keep models in memory",
+      "value": "5m"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "XL"
+    }
+  },
+  "stack": "scalingo-22"
+}
