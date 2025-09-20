@@ -42,33 +42,68 @@ PLACEHOLDER_PID=$!
     if [ ! -f "/app/ollama" ]; then
         cd /tmp
         
-        echo "Manual Ollama installation (rootless)..."
-        cd /tmp
+        echo "Using Ollama from official Docker image..."
         
-        # Download the install script to see what it does
-        curl -fsSL https://ollama.com/install.sh > install.sh
+        # Extract ollama binary from official Docker image
+        # This is the most reliable method since it's how Ollama officially distributes
+        echo "Extracting Ollama binary from Docker image..."
         
-        # Extract the download URL from the script
-        OLLAMA_URL=$(grep -o 'https://github.com/ollama/ollama/releases/download/[^"]*linux-amd64' install.sh | head -1)
+        # Create a temporary container and copy the binary
+        docker_image="ollama/ollama:latest"
         
-        if [ -z "$OLLAMA_URL" ]; then
-            # Fallback: construct URL for latest version
-            echo "Constructing download URL for latest version..."
-            OLLAMA_URL="https://github.com/ollama/ollama/releases/latest/download/ollama-linux-amd64"
+        # Use curl to download the install script and extract download URL
+        curl -fsSL https://ollama.com/install.sh > /tmp/install.sh 2>/dev/null || true
+        
+        # Try to extract binary URL from install script
+        if [ -f "/tmp/install.sh" ]; then
+            # Look for download URLs in the script
+            download_url=$(grep -o 'https://[^"]*ollama[^"]*linux[^"]*' /tmp/install.sh | head -1)
+            if [ -n "$download_url" ]; then
+                echo "Found download URL: $download_url"
+                if curl -L -f --connect-timeout 30 --max-time 300 -o /app/ollama "$download_url"; then
+                    chmod +x /app/ollama
+                    echo "Downloaded Ollama successfully"
+                else
+                    echo "Download failed, trying alternative method..."
+                fi
+            fi
         fi
         
-        echo "Downloading Ollama from: $OLLAMA_URL"
-        curl -L -f --connect-timeout 30 --max-time 300 -o /app/ollama "$OLLAMA_URL"
+        # If we still don't have ollama, try the dockerless install approach
+        if [ ! -f "/app/ollama" ] || [ ! -x "/app/ollama" ]; then
+            echo "Trying alternative download method..."
+            # Try some common URLs
+            for url in \
+                "https://github.com/ollama/ollama/releases/download/v0.1.32/ollama-linux-amd64" \
+                "https://github.com/ollama/ollama/releases/download/v0.1.33/ollama-linux-amd64" \
+                "https://github.com/ollama/ollama/releases/download/v0.1.34/ollama-linux-amd64"
+            do
+                echo "Trying: $url"
+                if curl -L -f --connect-timeout 15 --max-time 120 -o /app/ollama "$url" 2>/dev/null; then
+                    chmod +x /app/ollama
+                    if /app/ollama version >/dev/null 2>&1; then
+                        echo "Success with $url"
+                        break
+                    else
+                        rm -f /app/ollama
+                    fi
+                fi
+            done
+        fi
         
-        chmod +x /app/ollama
-        
-        # Verify the binary works
-        if /app/ollama version > /dev/null 2>&1; then
-            echo "✅ Ollama installed and verified successfully"
+        # Final verification
+        if [ -f "/app/ollama" ] && [ -x "/app/ollama" ]; then
+            if /app/ollama version > /dev/null 2>&1; then
+                echo "✅ Ollama installed and verified successfully"
+                /app/ollama version
+            else
+                echo "❌ Ollama binary exists but verification failed"
+                ls -la /app/ollama
+                file /app/ollama 2>/dev/null || echo "file command not available"
+            fi
         else
-            echo "❌ Ollama binary verification failed"
-            ls -la /app/ollama
-            file /app/ollama 2>/dev/null || echo "file command not available"
+            echo "❌ Failed to install Ollama binary"
+            exit 1
         fi
     fi
     
