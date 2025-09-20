@@ -42,9 +42,9 @@ PLACEHOLDER_PID=$!
     if [ ! -f "/app/ollama" ]; then
         cd /tmp
         
-        echo "Downloading Ollama v0.8.0 binary directly..."
+        echo "Downloading Ollama v0.3.12 binary (known working version)..."
         curl -L -f --connect-timeout 30 --max-time 300 -o /app/ollama \
-            "https://github.com/ollama/ollama/releases/download/v0.8.0/ollama-linux-amd64"
+            "https://github.com/ollama/ollama/releases/download/v0.3.12/ollama-linux-amd64"
         
         chmod +x /app/ollama
         echo "Ollama binary downloaded and installed successfully"
