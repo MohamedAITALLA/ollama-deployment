@@ -1,23 +1,18 @@
 FROM ollama/ollama:latest
 
-RUN apt-get update && apt-get install -y \
-    curl \
-    nodejs \
-    npm \
-    && rm -rf /var/lib/apt/lists/*
+# Install Node.js
+RUN apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/*
 
-ENV OLLAMA_HOST=0.0.0.0
-ENV OLLAMA_MODELS=/app/.ollama
-
+# Set working directory
 WORKDIR /app
 
-COPY package.json /app/
-COPY start-ollama.sh /app/start-ollama.sh
-RUN chmod +x /app/start-ollama.sh
-RUN mkdir -p /app/.ollama
+# Copy files
+COPY package.json start-ollama.sh ./
+RUN chmod +x start-ollama.sh
 
-# Copy ollama binary from system location to /app/
-RUN cp /usr/local/bin/ollama /app/ollama && chmod +x /app/ollama
+# Find and copy ollama binary (it should be somewhere in the base image)
+RUN find / -name "ollama" -type f -executable 2>/dev/null | head -1 | xargs -I {} cp {} /app/ollama || echo "Ollama not found in base image"
+RUN chmod +x /app/ollama 2>/dev/null || true
 
 EXPOSE 8080
-CMD ["/app/start-ollama.sh"]
+CMD ["./start-ollama.sh"]
